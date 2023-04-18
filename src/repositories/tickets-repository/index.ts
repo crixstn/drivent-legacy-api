@@ -52,11 +52,23 @@ async function postTicket({ status, enrollmentId, ticketTypeId }: PostTicket) {
   });
 }
 
+async function putStatus(ticketId: number) {
+  return await prisma.ticket.update({
+    where: {
+      id: ticketId,
+    },
+    data: {
+      status: 'PAID',
+    },
+  });
+}
+
 const ticketsRepository = {
   getTypes,
   getTicket,
   getUserTicket,
   postTicket,
+  putStatus,
 };
 
 export default ticketsRepository;
