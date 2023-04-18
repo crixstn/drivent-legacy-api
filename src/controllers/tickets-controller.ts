@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import httpStatus from 'http-status';
 import { ticketsService } from '@/services/tickets-service';
 import { AuthenticatedRequest } from '@/middlewares';
@@ -17,7 +17,11 @@ export async function getTickets(req: AuthenticatedRequest, res: Response) {
   const { userId } = req;
   try {
     const ticket = await ticketsService.getTicket(userId);
-    res.status(200).send(ticket);
+    if (!ticket) {
+      return res.status(httpStatus.NOT_FOUND).send('Ticket not found');
+    }
+
+    return res.status(200).send(ticket);
   } catch (error) {
     if (error.name === 'UnauthorizedError') return res.status(httpStatus.UNAUTHORIZED).send(error.message);
     if (error.name === 'NotFoundError') return res.status(httpStatus.NOT_FOUND).send(error.message);
