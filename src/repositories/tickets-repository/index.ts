@@ -7,18 +7,27 @@ async function getTypes(): Promise<TicketType[]> {
   return prisma.ticketType.findMany();
 }
 
-async function getTicket(userId: number) {
-  return await prisma.enrollment.findUnique({
-    where: {
-      userId,
-    },
+async function getTicket(enrollmentId: number) {
+  return await prisma.ticket.findFirst({
+    where: { enrollmentId },
     select: {
       id: true,
-      Ticket: {
-        include: {
-          TicketType: true,
+      status: true,
+      ticketTypeId: true,
+      enrollmentId: true,
+      TicketType: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          isRemote: true,
+          includesHotel: true,
+          createdAt: true,
+          updatedAt: true,
         },
       },
+      createdAt: true,
+      updatedAt: true,
     },
   });
 }
