@@ -11,4 +11,3 @@ prisma/**/*
 docker-compose*
 Dockerfile*
 nginx.conf
-LICENSE

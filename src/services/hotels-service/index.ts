@@ -1,28 +1,43 @@
-import httpStatus from 'http-status';
+import hotelRepository from '@/repositories/hotel-repository';
+import enrollmentRepository from '@/repositories/enrollment-repository';
 import { notFoundError } from '@/errors';
-import userRepository from '@/repositories/user-repository';
-import hotelsRepository from '@/repositories/hotels-repository';
 import ticketsRepository from '@/repositories/tickets-repository';
+import { cannotListHotelsError } from '@/errors/cannot-list-hotels-error';
 
-async function getAllHotels(userId: number) {
-  const user = await userRepository.findUser(userId);
-  if (!user) throw notFoundError();
+async function listHotels(userId: number) {
+  const enrollment = await enrollmentRepository.findWithAddressByUserId(userId);
+  if (!enrollment) {
+    throw notFoundError();
+  }
+  const ticket = await ticketsRepository.findTicketByEnrollmentId(enrollment.id);
 
-  const ticket = await ticketsRepository.getTicket(user.id);
-  if (!ticket) throw notFoundError();
-  if (ticket.status != 'PAID') throw httpStatus.PAYMENT_REQUIRED;
-  if (ticket.TicketType.isRemote || !ticket.TicketType.includesHotel) throw httpStatus.PAYMENT_REQUIRED;
-
-  return await hotelsRepository.getAllHotels();
+  if (!ticket || ticket.status === 'RESERVED' || ticket.TicketType.isRemote || !ticket.TicketType.includesHotel) {
+    throw cannotListHotelsError();
+  }
 }
 
-async function getHotelById(userId: number, hotelId: number) {
-  console.log('getHotelbyId');
+async function getHotels(userId: number) {
+  await listHotels(userId);
+
+  const hotels = await hotelRepository.findHotels();
+  if (!hotels || hotels.length === 0) {
+    throw notFoundError();
+  }
+  return hotels;
 }
 
-const hotelsService = {
-  getAllHotels,
-  getHotelById,
+async function getHotelsWithRooms(userId: number, hotelId: number) {
+  await listHotels(userId);
+
+  const hotel = await hotelRepository.findRoomsByHotelId(hotelId);
+
+  if (!hotel || hotel.Rooms.length === 0) {
+    throw notFoundError();
+  }
+  return hotel;
+}
+
+export default {
+  getHotels,
+  getHotelsWithRooms,
 };
-
-export { hotelsService };

@@ -1,44 +1,37 @@
-import { Response } from 'express';
+import { NextFunction, Response } from 'express';
 import httpStatus from 'http-status';
-import { ticketsService } from '@/services/tickets-service';
 import { AuthenticatedRequest } from '@/middlewares';
+import ticketService from '@/services/tickets-service';
+import { InputTicketBody } from '@/protocols';
 
-export async function getAllTypes(req: AuthenticatedRequest, res: Response) {
+export async function getTicketTypes(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<Response> {
   try {
-    const ticketTypes = await ticketsService.getAllTypes();
-    res.status(httpStatus.OK).send(ticketTypes);
-  } catch (error) {
-    if (error.name === 'UnauthorizedError') return res.status(httpStatus.UNAUTHORIZED).send(error.message);
-    return res.status(httpStatus.BAD_REQUEST).send(error);
+    const ticketTypes = await ticketService.getTicketType();
+    return res.status(httpStatus.OK).send(ticketTypes);
+  } catch (e) {
+    next(e);
   }
 }
 
-export async function getTickets(req: AuthenticatedRequest, res: Response) {
+export async function getTickets(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<Response> {
   const { userId } = req;
-  try {
-    const ticket = await ticketsService.getTicket(userId);
-    if (!ticket) {
-      return res.status(httpStatus.NOT_FOUND).send('Ticket not found');
-    }
 
-    return res.status(200).send(ticket);
-  } catch (error) {
-    if (error.name === 'UnauthorizedError') return res.status(httpStatus.UNAUTHORIZED).send(error.message);
-    if (error.name === 'NotFoundError') return res.status(httpStatus.NOT_FOUND).send(error.message);
-    return res.status(httpStatus.BAD_REQUEST).send(error);
+  try {
+    const ticket = await ticketService.getTicketByUserId(userId);
+    return res.status(httpStatus.OK).send(ticket);
+  } catch (e) {
+    next(e);
   }
 }
 
-export async function postTicket(req: AuthenticatedRequest, res: Response) {
+export async function createTicket(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<Response> {
   const { userId } = req;
-  const ticketTypeId: number = req.body.ticketTypeId;
+  const { ticketTypeId } = req.body as InputTicketBody;
 
   try {
-    const ticket = await ticketsService.postTicket({ userId, ticketTypeId });
+    const ticket = await ticketService.createTicket(userId, ticketTypeId);
     return res.status(httpStatus.CREATED).send(ticket);
-  } catch (error) {
-    if (error.name === 'UnauthorizedError') return res.status(httpStatus.UNAUTHORIZED).send(error.message);
-    if (error.name === 'NotFoundError') return res.status(httpStatus.NOT_FOUND).send(error.message);
-    return res.status(httpStatus.BAD_REQUEST).send(error);
+  } catch (e) {
+    next(e);
   }
 }
